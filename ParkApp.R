@@ -10,8 +10,6 @@ library(leaflet)
 library(plotly)
 library(ggridges)
 
-# url: https://bababuck.shinyapps.io/National_Park_Helper/
-
 source("helperFunctions.R") # load helper functions
 
 ui <-
@@ -97,13 +95,13 @@ ui <-
             width = "100%",
             h2("Visitor Information"),
             p("Traveling during off season can help beat the crowds."),
-            radioButtons("monthYear", "Would you like the monthly values or just the yearly trends?", choiceValues = c("month", "year"), choiceNames = c("Monthly", "Yearly")),
+            radioButtons("monthYear", "Would you like the monthly values or just the yearly trends?", choiceValues = c("year","month"), choiceNames = c("Yearly","Monthly")),
             sliderInput(
               inputId = "visitorYearRange",
-              label = "What years are you interested in",
+              label = "What is the oldest data you would like to include?",
               min = 1900, # have to update...#set errr message (data not available)
-              max = 2020,
-              value = c(1900, 2020),
+              max = 2010,
+              value = 1900,
               step = 1
             ),
             htmlOutput("visitorError"),
@@ -263,13 +261,21 @@ server <- function(input, output, session) {
       return(p("Sorry no camping in the park."))
     } else {
       site <- sites %>% filter(`name` == choice)
-      out <- list(
-        h2(site %>% select(`name`)),
-        br(),
-        p(site %>% select(`text`)),
-        br(),
-        tags$a(href = site %>% select(`url`), "Reservation Link")
-      )
+      if (site %>% select(`url`)==""){
+        out <- list(
+          h2(site %>% select(`name`)),
+          br(),
+          p(site %>% select(`text`))
+        )
+      } else {
+        out <- list(
+          h2(site %>% select(`name`)),
+          br(),
+          p(site %>% select(`text`)),
+          br(),
+          tags$a(href = site %>% select(`url`), "Reservation Link")
+        )
+      }
       return(tags$div(out))
     }
   })
@@ -413,7 +419,7 @@ server <- function(input, output, session) {
     if (is.null(scaledVisitors)) {
       return()
     } else {
-      scaledVisitors <- scaledVisitors %>% filter(`year` > input$visitorYearRange[1], `year` < input$visitorYearRange[2])
+      scaledVisitors <- scaledVisitors %>% filter(`year` > input$visitorYearRange)
       plot <- ggplot(scaledVisitors, aes(x = `visitors`, y = `monthNames`, group = `month`)) +
         stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
         xlab("Monthly Vistors Adjusted for Yearly Trends") +
@@ -429,7 +435,7 @@ server <- function(input, output, session) {
     if (is.null(visitors)) {
       return()
     } else {
-      visitors <- visitors %>% filter(`year` > input$visitorYearRange[1], `year` < input$visitorYearRange[2])
+      visitors <- visitors %>% filter(`year` > input$visitorYearRange)
       if (input$monthYear == "year") {
         year <- input$year
         numParks <- input$numPark

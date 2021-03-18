@@ -201,7 +201,7 @@ getYelpInfo <- function(parkName, lat, lng) {
   park <- fromJSON(json)[[1]]
   if (length(park) == 0) {
     return(NULL)
-  } else if ("parks" %in% (fromJSON(json)[[1]] %>% select(`categories`) %>% unlist())) {
+  } else if ("parks" %in% (park %>% select(`categories`) %>% unlist()) || "Landmarks & Historical Buildings" %in% (park %>% select(`categories`) %>% unlist())) {
     park <- park %>%
       select(`id`, `review_count`, `rating`) %>%
       slice_head(n = 1)
